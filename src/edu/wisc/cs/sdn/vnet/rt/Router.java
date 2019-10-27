@@ -144,6 +144,7 @@ public class Router extends Device
         ipPacket.setTtl((byte)(ipPacket.getTtl()-1));
         if (0 == ipPacket.getTtl())
         { 
+			System.out.println("TTL is zero! pkg drop!");
 			sendICMP(etherPacket, inIface, 11, 0,false);
 			return; 
 		}
@@ -158,6 +159,7 @@ public class Router extends Device
         	{ 
 				if(ipPacket.getProtocol()==IPv4.PROTOCOL_TCP ||
 				ipPacket.getProtocol()==IPv4.PROTOCOL_UDP){
+					System.out.println("Dst is one of Iface!");
 					this.sendICMP(etherPacket, inIface, 3, 3,false);
 				}else if(ipPacket.getProtocol()==IPv4.PROTOCOL_ICMP){
 					ICMP icmp = (ICMP)ipPacket.getPayload();
