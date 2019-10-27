@@ -5,7 +5,9 @@ import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 
 import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.ICMP;
 import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.*;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -119,7 +121,10 @@ public class Router extends Device
         // Check TTL
         ipPacket.setTtl((byte)(ipPacket.getTtl()-1));
         if (0 == ipPacket.getTtl())
-        { return; }
+        { 
+			sendICMP(etherPacket, inIface, 11, 0);
+			return; 
+		}
         
         // Reset checksum now that TTL is decremented
         ipPacket.resetChecksum();
@@ -133,6 +138,55 @@ public class Router extends Device
 		
         // Do route lookup and forward
         this.forwardIpPacket(etherPacket, inIface);
+	}
+
+	private void sendICMP(Ethernet etherPacket, Iface inIface, int type, int code){
+		IPv4 ipPacket = (IPv4)etherPacket.getPayload();
+		int srcIP = ipPacket.getSourceAddress();
+		
+		//ether header
+		Ethernet ether = new Ethernet();
+		ether.setEtherType(Ethernet.TYPE_IPv4);
+		ether.setSourceMACAddress(inIface.getMacAddress().toString());
+		//set MAC address of nxt hop
+		RouteEntry bestMatch = this.routeTable.lookup(srcIP);
+		int nextHop = bestMatch.getGatewayAddress();
+		if (0 == nextHop)
+        { nextHop = srcIP; }
+		ArpEntry  arpEntry = this.arpCache.lookup(nextHop);
+		if (null == arpEntry)
+        { return; }
+        ether.setDestinationMACAddress(arpEntry.getMac().toBytes());
+
+		//ip header
+		IPv4 ip = new IPv4();
+		ip.setTtl((byte)64);
+		ip.setProtocol(IPv4.PROTOCOL_ICMP);
+		ip.setSourceAddress(inIface.getIpAddress());
+		ip.setDestinationAddress(srcIP);
+
+		//ICMP header
+		ICMP icmp = new ICMP();
+		icmp.setIcmpType((byte)type);
+		icmp.setIcmpCode((byte)code);
+
+		//icmp payload
+		Data data = new Data();
+		byte[] a = new byte[4];
+		byte[] b = ipPacket.serialize();
+		int payloadLength = ipPacket.getHeaderLength()*4+8;
+		byte[] icmpPayload = new byte[4+payloadLength];
+		System.arraycopy(a, 0, icmpPayload, 0, a.length);
+		System.arraycopy(b, 0, icmpPayload, a.length, payloadLength);
+		data.setData(icmpPayload);
+
+		//link header together
+		ether.setPayload(ip);
+		ip.setPayload(icmp);
+		icmp.setPayload(data);
+		
+		//send the packet through received interface
+		this.sendPacket(ether, inIface);
 	}
 
     private void forwardIpPacket(Ethernet etherPacket, Iface inIface)
