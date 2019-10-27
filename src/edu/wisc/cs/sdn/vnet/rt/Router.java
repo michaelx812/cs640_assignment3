@@ -122,7 +122,7 @@ public class Router extends Device
         ipPacket.setTtl((byte)(ipPacket.getTtl()-1));
         if (0 == ipPacket.getTtl())
         { 
-			sendICMP(etherPacket, inIface, 11, 0);
+			sendICMP(etherPacket, inIface, 11, 0,false);
 			return; 
 		}
         
@@ -133,14 +133,25 @@ public class Router extends Device
         for (Iface iface : this.interfaces.values())
         {
         	if (ipPacket.getDestinationAddress() == iface.getIpAddress())
-        	{ return; }
+        	{ 
+				if(ipPacket.getProtocol()==IPv4.PROTOCOL_TCP ||
+				ipPacket.getProtocol()==IPv4.PROTOCOL_UDP){
+					this.sendICMP(etherPacket, inIface, 3, 3,false);
+				}else if(ipPacket.getProtocol()==IPv4.PROTOCOL_ICMP){
+					ICMP icmp = (ICMP)ipPacket.getPayload();
+					if(icmp.getIcmpType() == 8){
+						this.sendICMP(etherPacket, inIface, 0, 0, true);
+					}
+				}
+				return; 
+			}
         }
 		
         // Do route lookup and forward
         this.forwardIpPacket(etherPacket, inIface);
 	}
 
-	private void sendICMP(Ethernet etherPacket, Iface inIface, int type, int code){
+	private void sendICMP(Ethernet etherPacket, Iface inIface, int type, int code, boolean echo){
 		IPv4 ipPacket = (IPv4)etherPacket.getPayload();
 		int srcIP = ipPacket.getSourceAddress();
 		
@@ -162,23 +173,36 @@ public class Router extends Device
 		IPv4 ip = new IPv4();
 		ip.setTtl((byte)64);
 		ip.setProtocol(IPv4.PROTOCOL_ICMP);
-		ip.setSourceAddress(inIface.getIpAddress());
+		if(echo){
+			ip.setSourceAddress(ipPacket.getDestinationAddress());
+		}else{
+			ip.setSourceAddress(inIface.getIpAddress());
+		}
 		ip.setDestinationAddress(srcIP);
 
 		//ICMP header
 		ICMP icmp = new ICMP();
+		if(echo){
+			type = 0;
+			code = 0;
+		}
 		icmp.setIcmpType((byte)type);
 		icmp.setIcmpCode((byte)code);
 
 		//icmp payload
 		Data data = new Data();
-		byte[] a = new byte[4];
-		byte[] b = ipPacket.serialize();
-		int payloadLength = ipPacket.getHeaderLength()*4+8;
-		byte[] icmpPayload = new byte[4+payloadLength];
-		System.arraycopy(a, 0, icmpPayload, 0, a.length);
-		System.arraycopy(b, 0, icmpPayload, a.length, payloadLength);
-		data.setData(icmpPayload);
+		if(echo){
+			ICMP echoReq = (ICMP)ipPacket.getPayload();
+			data.setData(echoReq.getPayload().serialize());
+		}else{
+			byte[] a = new byte[4];
+			byte[] b = ipPacket.serialize();
+			int payloadLength = ipPacket.getHeaderLength()*4+8;
+			byte[] icmpPayload = new byte[4+payloadLength];
+			System.arraycopy(a, 0, icmpPayload, 0, a.length);
+			System.arraycopy(b, 0, icmpPayload, a.length, payloadLength);
+			data.setData(icmpPayload);
+		}
 
 		//link header together
 		ether.setPayload(ip);
@@ -205,7 +229,10 @@ public class Router extends Device
 
         // If no entry matched, do nothing
         if (null == bestMatch)
-        { return; }
+        { 
+			this.sendICMP(etherPacket, inIface, 3, 0,false);
+			return; 
+		}
 
         // Make sure we don't sent a packet back out the interface it came in
         Iface outIface = bestMatch.getInterface();
@@ -223,7 +250,10 @@ public class Router extends Device
         // Set destination MAC address in Ethernet header
         ArpEntry arpEntry = this.arpCache.lookup(nextHop);
         if (null == arpEntry)
-        { return; }
+        { 
+			this.sendICMP(etherPacket, inIface, 3, 1,false);
+			return; 
+		}
         etherPacket.setDestinationMACAddress(arpEntry.getMac().toBytes());
         
         this.sendPacket(etherPacket, outIface);
