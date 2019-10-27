@@ -230,6 +230,7 @@ public class Router extends Device
         // If no entry matched, do nothing
         if (null == bestMatch)
         { 
+			System.out.println("packet sent");
 			this.sendICMP(etherPacket, inIface, 3, 0,false);
 			return; 
 		}
