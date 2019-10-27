@@ -345,6 +345,7 @@ public class Router extends Device
 
     private void forwardIpPacket(Ethernet etherPacket, Iface inIface)
     {
+		final Iface finalInIface = inIface;
         // Make sure it's an IP packet
 		if (etherPacket.getEtherType() != Ethernet.TYPE_IPv4)
 		{ return; }
@@ -427,12 +428,12 @@ public class Router extends Device
 					}else if(counter == 3){
 						Queue<Ethernet> q = waitingQueue.get(nxtHop);
 						for(Ethernet e: q){
-							sendICMP(e, inIface, 3, 1, false);
+							sendICMP(e, finalInIface, 3, 1, false);
 						}
 						waitingQueue.remove(nxtHop);
 						this.cancel();
 					}else{
-						sendArpRequest(inIface, nxtHop);
+						sendArpRequest(finalInIface, nxtHop);
 						counter++;
 					}
 					
