@@ -271,7 +271,7 @@ public class Router extends Device
 		ether.setEtherType(Ethernet.TYPE_ARP);
 		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
 
-		byte[] a = new byte[]{(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF};
+		byte[] a = new byte[]{(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF};
 		ether.setDestinationMACAddress(a);
 
 		
