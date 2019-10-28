@@ -503,6 +503,7 @@ public class Router extends Device
 				waitingQueue.get(nxtHop).add(etherPacket);
 				return;
 			}
+			System.out.println("Look up:"+nxtHop);
 			Queue<Ethernet> tempQ = new LinkedList<Ethernet>();
 			tempQ.add(etherPacket);
 			waitingQueue.put(nxtHop,tempQ);
@@ -548,6 +549,7 @@ public class Router extends Device
 						waitingQueue.remove(nxtHop);
 						this.cancel();
 					}else{
+						System.out.println("send request nextjp:"+nxtHop);
 						sendArpRequest(finalInIface, nxtHop);
 						counter++;
 					}
