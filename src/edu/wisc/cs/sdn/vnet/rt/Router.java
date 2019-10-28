@@ -87,9 +87,11 @@ public class Router extends Device
 		for (Iface iface : this.interfaces.values()){
 			int mask = iface.getSubnetMask();
 			int addr = mask&iface.getIpAddress();
-			this.routeTable.insert(addr, 0, mask, iface);
-			RIPv2Entry  ripEntry = new RIPv2Entry(addr, mask, 1);
-			ripEntry.setNextHopAddress(addr);
+			synchronized(this.routeTable){
+				this.routeTable.insert(addr, 0, mask, iface);
+			}
+			RIPv2Entry  ripEntry = new RIPv2Entry(addr, mask, 0);
+			ripEntry.setNextHopAddress(iface.getIpAddress());
 			LocalRIPEntry localRipEntry = new LocalRIPEntry(-1, ripEntry);
 			this.ripTable.add(localRipEntry);
 			sendRIPRequest(iface);
@@ -115,7 +117,9 @@ public class Router extends Device
 					for(LocalRIPEntry entry: ripTable){
 						if(entry.startTime != -1 && (System.currentTimeMillis()- entry.startTime)>=30000){
 							System.out.println("timeout entry :"+entry.ripEntry.getAddress());
-							routeTable.remove(entry.ripEntry.getAddress(),entry.ripEntry.getSubnetMask());
+							synchronized(routeTable){
+								routeTable.remove(entry.ripEntry.getAddress(),entry.ripEntry.getSubnetMask());
+							}
 							ripTable.remove(entry);
 						}
 					}
@@ -196,33 +200,47 @@ public class Router extends Device
 			for(RIPv2Entry entry: entries){
 				int addr = entry.getAddress();
 				int mask = entry.getSubnetMask();
-				int nextHop = inIface.getIpAddress();
+				int nextHop = ip.getSourceAddress();
 				int metric = entry.getMetric()+1;
 				if(metric >= 16){
 					continue;
 				}
 				//int netNum = addr&mask;
+				boolean update = false;
 				boolean match = false;
-				for(LocalRIPEntry lEntry: ripTable){
-					if(addr == lEntry.ripEntry.getAddress() && mask == lEntry.ripEntry.getSubnetMask()){
-						match = true;
-						if(metric < lEntry.ripEntry.getMetric()){
-							lEntry.ripEntry.setMetric(metric);
-							lEntry.ripEntry.setNextHopAddress(nextHop);
-							System.out.println("routetable add entry :"+addr+" "+nextHop+" "+metric);
-							routeTable.update(addr, mask, nextHop, inIface);
-							lEntry.startTime = System.currentTimeMillis();
-						}else if(metric == lEntry.ripEntry.getMetric() && nextHop == lEntry.ripEntry.getNextHopAddress()){
-							lEntry.startTime = System.currentTimeMillis();
+				synchronized(ripTable){
+					for(LocalRIPEntry lEntry: ripTable){
+						if(addr == lEntry.ripEntry.getAddress() && mask == lEntry.ripEntry.getSubnetMask()){
+							match = true;
+							if(metric < lEntry.ripEntry.getMetric()){
+								update = true;
+								lEntry.ripEntry.setMetric(metric);
+								lEntry.ripEntry.setNextHopAddress(nextHop);
+								System.out.println("routetable add entry :"+addr+" "+nextHop+" "+metric);
+								synchronized(routeTable){
+									routeTable.update(addr, mask, nextHop, inIface);
+								}
+								lEntry.startTime = System.currentTimeMillis();
+							}else if(metric == lEntry.ripEntry.getMetric() && nextHop == lEntry.ripEntry.getNextHopAddress()){
+								lEntry.startTime = System.currentTimeMillis();
+							}
 						}
 					}
-				}
+				}	
 				if(!match){
+					update = true;
 					entry.setNextHopAddress(nextHop);
 					entry.setMetric(metric);
 					ripTable.add(new LocalRIPEntry(System.currentTimeMillis(), entry));
 					System.out.println("routetable add entry :"+addr+" "+nextHop+" "+metric);
-					routeTable.insert(addr, nextHop, mask, inIface);
+					synchronized(routeTable){ 
+						routeTable.insert(addr, nextHop, mask, inIface);
+					}
+				}
+				if(update){
+					for(Iface iface : interfaces.values()){
+						sendRIPResponse(null, iface);
+					}
 				}
 			}
 
@@ -405,7 +423,7 @@ public class Router extends Device
 		
 		
 
-		byte[] targetHW = new byte[(byte)Ethernet.DATALAYER_ADDRESS_LENGTH];
+		byte[] targetHW = new byte[Ethernet.DATALAYER_ADDRESS_LENGTH];
 		arp.setTargetHardwareAddress(targetHW);
 		arp.setTargetProtocolAddress(requestIp);
 
