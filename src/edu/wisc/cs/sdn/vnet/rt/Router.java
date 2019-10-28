@@ -86,7 +86,7 @@ public class Router extends Device
 		ripTable = new ConcurrentLinkedQueue<>();
 		for (Iface iface : this.interfaces.values()){
 			int mask = iface.getSubnetMask();
-			int addr = mask&iface.getIpAddress();
+			int addr = iface.getIpAddress();
 			synchronized(this.routeTable){
 				this.routeTable.insert(addr, 0, mask, iface);
 			}
@@ -620,8 +620,10 @@ public class Router extends Device
 		RIPv2 rip = new RIPv2();
 		rip.setCommand(RIPv2.COMMAND_RESPONSE);
 		List<RIPv2Entry> entries = new ArrayList<RIPv2Entry>();
-		for(LocalRIPEntry entry : ripTable){
-			entries.add(entry.ripEntry);
+		synchronized(ripTable){
+			for(LocalRIPEntry entry : ripTable){
+				entries.add(entry.ripEntry);
+			}
 		}
 		rip.setEntries(entries);
 		Ethernet ether = new Ethernet();
