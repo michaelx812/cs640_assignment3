@@ -293,6 +293,8 @@ public class Router extends Device
 		ARP arpPacket = (ARP)etherPacket.getPayload();
 		if(arpPacket.getOpCode()==ARP.OP_REQUEST){
 			int targetIp = ByteBuffer.wrap(arpPacket.getTargetProtocolAddress()).getInt();
+			System.out.println("target ip = "+targetIp);
+			System.out.println("my interface ="+inIface.getIpAddress());
 			if(targetIp == inIface.getIpAddress()){
 				System.out.println("reply Arp!");
 				sendArpReply(etherPacket, inIface);
