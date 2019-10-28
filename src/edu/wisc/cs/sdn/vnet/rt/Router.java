@@ -545,7 +545,7 @@ public class Router extends Device
 					}else if(counter == 3){
 						Queue<Ethernet> q = waitingQueue.get(nxtHop);
 						for(Ethernet e: q){
-							System.out.println("sent ICMP :"+nxtHop);
+							System.out.println("sent ICMP :"+finalInIface);
 							sendICMP(e, finalInIface, 3, 1, false);
 						}
 						waitingQueue.remove(nxtHop);
