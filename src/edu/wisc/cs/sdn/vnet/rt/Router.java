@@ -294,6 +294,7 @@ public class Router extends Device
 		if(arpPacket.getOpCode()==ARP.OP_REQUEST){
 			int targetIp = ByteBuffer.wrap(arpPacket.getTargetProtocolAddress()).getInt();
 			if(targetIp == inIface.getIpAddress()){
+				System.out.println("reply Arp!");
 				sendArpReply(etherPacket, inIface);
 			}
 		}else if(arpPacket.getOpCode()==ARP.OP_REPLY){
