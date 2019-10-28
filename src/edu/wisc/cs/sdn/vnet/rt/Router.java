@@ -169,7 +169,7 @@ public class Router extends Device
 		{
 		case Ethernet.TYPE_IPv4:
 			IPv4 ipPacket = (IPv4)etherPacket.getPayload();
-			final int ripAddr = 224 << 24 + 9 ;
+			final int ripAddr = IPv4.toIPv4Address("224.0.0.9");
 			if(ipPacket.getDestinationAddress() ==  ripAddr && 
 				ipPacket.getProtocol()== IPv4.PROTOCOL_UDP && 
 					((UDP)ipPacket.getPayload()).getDestinationPort()==520){
@@ -600,7 +600,7 @@ public class Router extends Device
 		ip.setTtl((byte)15);
 		ip.setProtocol(IPv4.PROTOCOL_UDP);
 		ip.setSourceAddress(inIface.getIpAddress());
-		ip.setDestinationAddress(224 << 24 + 9);
+		ip.setDestinationAddress(IPv4.toIPv4Address("224.0.0.9"));
 		
 		UDP udp = new UDP();
 		udp.setSourcePort(UDP.RIP_PORT);
@@ -638,7 +638,7 @@ public class Router extends Device
 		else{
 			byte[] a = new byte[]{(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF};
 			ether.setDestinationMACAddress(a);
-			ip.setDestinationAddress(224 << 24 + 9);
+			ip.setDestinationAddress(IPv4.toIPv4Address("224.0.0.9"));
 		}
 		UDP udp = new UDP();
 		udp.setSourcePort(UDP.RIP_PORT);
