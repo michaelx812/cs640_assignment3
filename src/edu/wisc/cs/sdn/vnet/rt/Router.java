@@ -216,7 +216,7 @@ public class Router extends Device
 								update = true;
 								lEntry.ripEntry.setMetric(metric);
 								lEntry.ripEntry.setNextHopAddress(nextHop);
-								System.out.println("routetable add entry :"+addr+" "+nextHop+" "+metric);
+								System.out.println("routetable add entry :"+IPv4.fromIPv4Address(addr)+" "+IPv4.fromIPv4Address(nextHop)+" "+metric);
 								synchronized(routeTable){
 									routeTable.update(addr, mask, nextHop, inIface);
 								}
@@ -232,7 +232,7 @@ public class Router extends Device
 					entry.setNextHopAddress(nextHop);
 					entry.setMetric(metric);
 					ripTable.add(new LocalRIPEntry(System.currentTimeMillis(), entry));
-					System.out.println("routetable add entry :"+addr+" "+nextHop+" "+metric);
+					System.out.println("routetable add entry :"+IPv4.fromIPv4Address(addr)+" "+IPv4.fromIPv4Address(nextHop)+" "+metric);
 					synchronized(routeTable){ 
 						routeTable.insert(addr, nextHop, mask, inIface);
 					}
@@ -311,8 +311,8 @@ public class Router extends Device
 		ARP arpPacket = (ARP)etherPacket.getPayload();
 		if(arpPacket.getOpCode()==ARP.OP_REQUEST){
 			int targetIp = ByteBuffer.wrap(arpPacket.getTargetProtocolAddress()).getInt();
-			System.out.println("target ip = "+targetIp);
-			System.out.println("my interface ="+inIface.getIpAddress());
+			System.out.println("target ip = "+IPv4.fromIPv4Address(targetIp));
+			System.out.println("my interface ="+IPv4.fromIPv4Address(inIface.getIpAddress()));
 			if(targetIp == inIface.getIpAddress()){
 				System.out.println("reply Arp!");
 				sendArpReply(etherPacket, inIface);
@@ -522,7 +522,7 @@ public class Router extends Device
 				waitingQueue.get(nxtHop).add(etherPacket);
 				return;
 			}
-			System.out.println("Look up:"+nxtHop);
+			System.out.println("Look up:"+IPv4.fromIPv4Address(nxtHop));
 			Queue<Ethernet> tempQ = new LinkedList<Ethernet>();
 			tempQ.add(etherPacket);
 			waitingQueue.put(nxtHop,tempQ);
@@ -569,7 +569,7 @@ public class Router extends Device
 						waitingQueue.remove(nxtHop);
 						this.cancel();
 					}else{
-						System.out.println("send request nextjp:"+nxtHop);
+						System.out.println("send request nextjp:"+IPv4.fromIPv4Address(nxtHop));
 						sendArpRequest(finalOutIface, nxtHop);
 						counter++;
 					}
