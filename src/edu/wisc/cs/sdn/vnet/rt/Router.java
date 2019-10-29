@@ -245,6 +245,7 @@ public class Router extends Device
 			}
 
 		}
+		System.out.println(this.routeTable.toString());
 	}
 
 	private void handleIpPacket(Ethernet etherPacket, Iface inIface)
