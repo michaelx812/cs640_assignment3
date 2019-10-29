@@ -301,7 +301,7 @@ public class Router extends Device
 			}
         }
 		
-        // Do route lookup and forward
+        // Do route lookup and forward 
         this.forwardIpPacket(etherPacket, inIface);
 	}
 
