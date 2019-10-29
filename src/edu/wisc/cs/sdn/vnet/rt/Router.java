@@ -576,7 +576,7 @@ public class Router extends Device
 					
 				}
 			};
-			time.schedule(tk, 0, 1*1000);
+			time.schedule(tk, 0, 1*10000);
 			//this.sendICMP(etherPacket, inIface, 3, 1,false);
 
 			return; 
