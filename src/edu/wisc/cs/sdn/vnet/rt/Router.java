@@ -86,7 +86,7 @@ public class Router extends Device
 		ripTable = new ConcurrentLinkedQueue<>();
 		for (Iface iface : this.interfaces.values()){
 			int mask = iface.getSubnetMask();
-			int addr = iface.getIpAddress();
+			int addr = mask&iface.getIpAddress();
 			synchronized(this.routeTable){
 				this.routeTable.insert(addr, 0, mask, iface);
 			}
