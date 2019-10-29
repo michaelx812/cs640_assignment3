@@ -14,7 +14,7 @@ import java.util.concurrent.*;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+//import java.util.Map;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -116,7 +116,7 @@ public class Router extends Device
 				while(true){
 					for(LocalRIPEntry entry: ripTable){
 						if(entry.startTime != -1 && (System.currentTimeMillis()- entry.startTime)>=30000){
-							System.out.println("timeout entry :"+entry.ripEntry.getAddress());
+							System.out.println("timeout entry :"+IPv4.fromIPv4Address(entry.ripEntry.getAddress()) );
 							synchronized(routeTable){
 								routeTable.remove(entry.ripEntry.getAddress(),entry.ripEntry.getSubnetMask());
 							}
@@ -216,7 +216,6 @@ public class Router extends Device
 								update = true;
 								lEntry.ripEntry.setMetric(metric);
 								lEntry.ripEntry.setNextHopAddress(nextHop);
-								System.out.println("routetable add entry :"+IPv4.fromIPv4Address(addr)+" "+IPv4.fromIPv4Address(nextHop)+" "+metric);
 								synchronized(routeTable){
 									routeTable.update(addr, mask, nextHop, inIface);
 								}
@@ -232,7 +231,6 @@ public class Router extends Device
 					entry.setNextHopAddress(nextHop);
 					entry.setMetric(metric);
 					ripTable.add(new LocalRIPEntry(System.currentTimeMillis(), entry));
-					System.out.println("routetable add entry :"+IPv4.fromIPv4Address(addr)+" "+IPv4.fromIPv4Address(nextHop)+" "+metric);
 					synchronized(routeTable){ 
 						routeTable.insert(addr, nextHop, mask, inIface);
 					}
@@ -312,10 +310,7 @@ public class Router extends Device
 		ARP arpPacket = (ARP)etherPacket.getPayload();
 		if(arpPacket.getOpCode()==ARP.OP_REQUEST){
 			int targetIp = ByteBuffer.wrap(arpPacket.getTargetProtocolAddress()).getInt();
-			System.out.println("target ip = "+IPv4.fromIPv4Address(targetIp));
-			System.out.println("my interface ="+IPv4.fromIPv4Address(inIface.getIpAddress()));
 			if(targetIp == inIface.getIpAddress()){
-				System.out.println("reply Arp!");
 				sendArpReply(etherPacket, inIface);
 			}
 		}else if(arpPacket.getOpCode()==ARP.OP_REPLY){
@@ -332,6 +327,8 @@ public class Router extends Device
 				waitingQueue.remove(ip);
 			}
 		}	
+		System.out.println(this.arpCache.toString());
+
 	}
 	
 	private void sendICMP(Ethernet etherPacket, Iface inIface, int type, int code, boolean echo){
@@ -495,7 +492,6 @@ public class Router extends Device
         // If no entry matched, do nothing
         if (null == bestMatch)
         { 
-			System.out.println("packet sent");
 			this.sendICMP(etherPacket, inIface, 3, 0,false);
 			return; 
 		}
@@ -523,7 +519,6 @@ public class Router extends Device
 				waitingQueue.get(nxtHop).add(etherPacket);
 				return;
 			}
-			System.out.println("Look up:"+IPv4.fromIPv4Address(nxtHop));
 			Queue<Ethernet> tempQ = new LinkedList<Ethernet>();
 			tempQ.add(etherPacket);
 			waitingQueue.put(nxtHop,tempQ);
@@ -564,13 +559,11 @@ public class Router extends Device
 					}else if(counter == 3){
 						Queue<Ethernet> q = waitingQueue.get(nxtHop);
 						for(Ethernet e: q){
-							System.out.println("sent ICMP :"+finalInIface);
 							sendICMP(e, finalInIface, 3, 1, false);
 						}
 						waitingQueue.remove(nxtHop);
 						this.cancel();
 					}else{
-						System.out.println("send request nextjp:"+IPv4.fromIPv4Address(nxtHop));
 						sendArpRequest(finalOutIface, nxtHop);
 						counter++;
 					}
