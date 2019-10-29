@@ -285,6 +285,10 @@ public class Router extends Device
         	{ 
 				if(ipPacket.getProtocol()==IPv4.PROTOCOL_TCP ||
 				ipPacket.getProtocol()==IPv4.PROTOCOL_UDP){
+					if(ipPacket.getProtocol()==IPv4.PROTOCOL_UDP && ((UDP)ipPacket.getPayload()).getDestinationPort()==UDP.RIP_PORT){
+						handleRIPPacket(etherPacket, inIface);
+						return;
+					}
 					System.out.println("Dst is one of Iface!");
 					this.sendICMP(etherPacket, inIface, 3, 3,false);
 				}else if(ipPacket.getProtocol()==IPv4.PROTOCOL_ICMP){
