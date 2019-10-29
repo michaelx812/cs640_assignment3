@@ -604,9 +604,8 @@ public class Router extends Device
 		udp.setSourcePort(UDP.RIP_PORT);
 		udp.setDestinationPort(UDP.RIP_PORT);
 		
-		Data data = new Data();
-		data.setData(rip.serialize());
-		udp.setPayload(data);
+
+		udp.setPayload(rip);
 		ip.setPayload(udp);
 		byte[] ipPkt = ip.serialize();
 		ether.setPayload(ip.deserialize(ipPkt, 0, ipPkt.length));
@@ -624,9 +623,11 @@ public class Router extends Device
 			}
 		}
 		rip.setEntries(entries);
+
 		Ethernet ether = new Ethernet();
 		ether.setEtherType(Ethernet.TYPE_IPv4);
 		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
+
 		IPv4 ip = new IPv4();
 		ip.setTtl((byte)15);
 		ip.setProtocol(IPv4.PROTOCOL_UDP);
@@ -640,13 +641,13 @@ public class Router extends Device
 			ether.setDestinationMACAddress(a);
 			ip.setDestinationAddress(IPv4.toIPv4Address("224.0.0.9"));
 		}
+
 		UDP udp = new UDP();
 		udp.setSourcePort(UDP.RIP_PORT);
 		udp.setDestinationPort(UDP.RIP_PORT);
 		
-		Data data = new Data();
-		data.setData(rip.serialize());
-		udp.setPayload(data);
+
+		udp.setPayload(rip);
 		ip.setPayload(udp);
 		byte[] ipPkt = ip.serialize();
 		ether.setPayload(ip.deserialize(ipPkt, 0, ipPkt.length));
