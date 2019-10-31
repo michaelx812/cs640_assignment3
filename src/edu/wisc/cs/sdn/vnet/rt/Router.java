@@ -3,10 +3,6 @@ package edu.wisc.cs.sdn.vnet.rt;
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
-
-import net.floodlightcontroller.packet.Ethernet;
-import net.floodlightcontroller.packet.ICMP;
-import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.*;
 
 import java.nio.ByteBuffer;
@@ -314,6 +310,8 @@ public class Router extends Device
 		ARP arpPacket = (ARP)etherPacket.getPayload();
 		if(arpPacket.getOpCode()==ARP.OP_REQUEST){
 			int targetIp = ByteBuffer.wrap(arpPacket.getTargetProtocolAddress()).getInt();
+			MACAddress mac = new MACAddress(arpPacket.getSenderHardwareAddress());
+			arpCache.insert(mac,targetIp);
 			if(targetIp == inIface.getIpAddress()){
 				sendArpReply(etherPacket, inIface);
 			}
