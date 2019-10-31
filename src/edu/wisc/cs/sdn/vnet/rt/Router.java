@@ -310,8 +310,8 @@ public class Router extends Device
 		ARP arpPacket = (ARP)etherPacket.getPayload();
 		if(arpPacket.getOpCode()==ARP.OP_REQUEST){
 			int targetIp = ByteBuffer.wrap(arpPacket.getTargetProtocolAddress()).getInt();
-			MACAddress mac = new MACAddress(arpPacket.getSenderHardwareAddress());
-			arpCache.insert(mac,targetIp);
+			// MACAddress mac = new MACAddress(arpPacket.getSenderHardwareAddress());
+			// arpCache.insert(mac,targetIp);
 			if(targetIp == inIface.getIpAddress()){
 				sendArpReply(etherPacket, inIface);
 			}
