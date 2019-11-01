@@ -435,7 +435,8 @@ public class Router extends Device
 		ArpEntry  arpEntry = this.arpCache.lookup(nextHop);
 		if (null == arpEntry)
         { 
-			startArpRequest(etherPacket, nxtHop, inIface);
+			final Iface finalInface = inIface;
+			startArpRequest(etherPacket, nxtHop, finalInface);
 			return; 
 		}
         ether.setDestinationMACAddress(arpEntry.getMac().toBytes());
@@ -448,7 +449,7 @@ public class Router extends Device
 		this.sendPacket(ether, inIface);
 	}
 
-    private void startArpRequest(Ethernet etherPacket,final int nxtHop,Iface inface){
+    private void startArpRequest(Ethernet etherPacket,final int nxtHop,final Iface inface){
 		if(waitingQueue.containsKey(nxtHop)){
 			waitingQueue.get(nxtHop).add(new ArpRequestEntry(inface,etherPacket));
 			return;
@@ -465,9 +466,9 @@ public class Router extends Device
 							arpFound = true;
 							break;
 						}else{
-							for(Iface iface : interfaces.values()){
-								sendArpRequest(iface, nxtHop);
-							}
+							//for(Iface iface : interfaces.values()){
+								sendArpRequest(inface, nxtHop);
+							//}
 						}
 					try{
 
@@ -610,7 +611,8 @@ public class Router extends Device
         ArpEntry arpEntry = this.arpCache.lookup(nxtHop);
         if (null == arpEntry)
         { 
-			startArpRequest(etherPacket,nxtHop,inIface);
+			final Iface finalInface = inIface;
+			startArpRequest(etherPacket,nxtHop,finalInface);
 			// if(waitingQueue.containsKey(nxtHop)){
 			// 	waitingQueue.get(nxtHop).add(etherPacket);
 			// 	return;
