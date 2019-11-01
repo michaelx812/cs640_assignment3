@@ -271,7 +271,14 @@ public class Router extends Device
 			sendICMP(etherPacket, inIface, 11, 0,false);
 			return; 
 		}
-        
+		
+		//add arp entry
+		int srcIP = ipPacket.getSourceAddress();
+		if(arpCache.lookup(srcIP)==null){
+			MACAddress mac = new MACAddress(etherPacket.getSourceMACAddress());
+			arpCache.insert(mac,srcIP);
+		}
+		
         // Reset checksum now that TTL is decremented
         ipPacket.resetChecksum();
 		
