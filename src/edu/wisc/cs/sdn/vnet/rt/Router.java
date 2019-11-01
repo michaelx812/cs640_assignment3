@@ -423,6 +423,9 @@ public class Router extends Device
 		
 		//set MAC address of nxt hop
 		RouteEntry bestMatch = this.routeTable.lookup(srcIP);
+		if (null == bestMatch){
+			return;
+		}
 		int nextHop = bestMatch.getGatewayAddress();
 		if (0 == nextHop)
         { nextHop = srcIP; }
