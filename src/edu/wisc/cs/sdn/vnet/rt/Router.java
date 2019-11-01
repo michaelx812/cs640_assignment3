@@ -347,15 +347,15 @@ public class Router extends Device
 			MACAddress mac = new MACAddress(arpPacket.getSenderHardwareAddress());
 			int ip = ByteBuffer.wrap(arpPacket.getSenderProtocolAddress()).getInt();
 			arpCache.insert(mac,ip);
-			if(waitingQueue.containsKey(ip)){
-				ConcurrentLinkedQueue<Ethernet> q = waitingQueue.get(ip);
-				while(!q.isEmpty()){
-					Ethernet ePacket = q.poll();
-					ePacket.setDestinationMACAddress(mac.toBytes());
-					this.sendPacket(ePacket,inIface);
-				}
-				waitingQueue.remove(ip);
-			}
+			// if(waitingQueue.containsKey(ip)){
+			// 	ConcurrentLinkedQueue<Ethernet> q = waitingQueue.get(ip);
+			// 	while(!q.isEmpty()){
+			// 		Ethernet ePacket = q.poll();
+			// 		ePacket.setDestinationMACAddress(mac.toBytes());
+			// 		this.sendPacket(ePacket,inIface);
+			// 	}
+			// 	waitingQueue.remove(ip);
+			// }
 		}	
 		System.out.println(this.arpCache.toString());
 
@@ -531,7 +531,7 @@ public class Router extends Device
         Iface outIface = bestMatch.getInterface();
         if (outIface == inIface)
 		{ return; }
-		final Iface finalOutIface = outIface;
+		Final finalOutIface = outIface;
 
         // Set source MAC address in Ethernet header
         etherPacket.setSourceMACAddress(outIface.getMacAddress().toBytes());
@@ -573,14 +573,19 @@ public class Router extends Device
 							System.out.println("Thread.sleep trows InterruptedException");
 						}
 					}
-					if(!arpFound){				
-						Queue<Ethernet> q = waitingQueue.get(nxtHop);
-						while(!q.isEmpty()){
-							Ethernet e = q.poll();
+								
+					Queue<Ethernet> q = waitingQueue.get(nxtHop);
+					while(!q.isEmpty()){
+						Ethernet e = q.poll();
+						if(arpFound){
+							e.setDestinationMACAddress(arpCache.lookup(nxtHop).getMac().toBytes());
+							sendPacket(e, finalOutIface);
+						}else{
 							sendICMP(e, finalInIface, 3, 1, false);
 						}
-						waitingQueue.remove(nxtHop);
 					}
+					waitingQueue.remove(nxtHop);
+					
 					
 				}
 			});
