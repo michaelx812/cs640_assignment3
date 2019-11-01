@@ -177,6 +177,7 @@ public class Router extends Device
 			break;
 		case Ethernet.TYPE_ARP:
 			this.handleArpPacket(etherPacket,inIface);
+			break;
 		// Ignore all other packet types, for now
 		}
 		
@@ -279,21 +280,28 @@ public class Router extends Device
         {
         	if (ipPacket.getDestinationAddress() == iface.getIpAddress())
         	{ 
-				if(ipPacket.getProtocol()==IPv4.PROTOCOL_TCP ||
-				ipPacket.getProtocol()==IPv4.PROTOCOL_UDP){
-					if(ipPacket.getProtocol()==IPv4.PROTOCOL_UDP && ((UDP)ipPacket.getPayload()).getDestinationPort()==UDP.RIP_PORT){
-						handleRIPPacket(etherPacket, inIface);
+				switch(ipPacket.getProtocol()){
+					case IPv4.PROTOCOL_TCP:
+						sendICMP(etherPacket, inIface, 3, 3,false);
+						break;
+					case IPv4.PROTOCOL_UDP:
+						UDP udp = (UDP)ipPacket.getPayload();
+						if(udp.getDestinationPort()==UDP.RIP_PORT){
+							handleRIPPacket(etherPacket, inIface);
+							return;
+						}
+						sendICMP(etherPacket, inIface, 3, 3,false);
 						return;
-					}
-					System.out.println("Dst is one of Iface!");
-					this.sendICMP(etherPacket, inIface, 3, 3,false);
-				}else if(ipPacket.getProtocol()==IPv4.PROTOCOL_ICMP){
-					ICMP icmp = (ICMP)ipPacket.getPayload();
-					if(icmp.getIcmpType() == 8){
-						this.sendICMP(etherPacket, inIface, 0, 0, true);
-					}
+					case IPv4.PROTOCOL_ICMP:
+						ICMP icmp = (ICMP)ipPacket.getPayload();
+						if(icmp.getIcmpType()==(byte)8){
+							sendICMP(etherPacket, inIface, 0, 0, true);
+						}
+						return;
+					default:
+						return;
 				}
-				return; 
+				
 			}
         }
 		
