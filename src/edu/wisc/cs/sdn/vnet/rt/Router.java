@@ -119,6 +119,11 @@ public class Router extends Device
 							ripTable.remove(entry);
 						}
 					}
+					try{
+						Thread.sleep(1000);
+					}catch(InterruptedException e){
+						System.out.println("Thread.sleep trows InterruptedException");
+					}
 				}
 			}
 		});
