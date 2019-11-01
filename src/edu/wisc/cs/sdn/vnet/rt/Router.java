@@ -568,7 +568,10 @@ public class Router extends Device
 								waitingQueue.remove(nxtHop);
 								break;
 							}else{
-								sendArpRequest(finalOutIface, nxtHop);
+								for(Iface iface : interfaces.values()){
+									sendArpRequest(iface, nxtHop);
+								}
+								
 								counter++;
 							}
 						try{
