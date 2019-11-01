@@ -531,7 +531,7 @@ public class Router extends Device
         Iface outIface = bestMatch.getInterface();
         if (outIface == inIface)
 		{ return; }
-		Final finalOutIface = outIface;
+		final Iface finalOutIface = outIface;
 
         // Set source MAC address in Ethernet header
         etherPacket.setSourceMACAddress(outIface.getMacAddress().toBytes());
