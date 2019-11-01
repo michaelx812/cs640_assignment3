@@ -466,9 +466,9 @@ public class Router extends Device
 							arpFound = true;
 							break;
 						}else{
-							//for(Iface iface : interfaces.values()){
-								sendArpRequest(inface, nxtHop);
-							//}
+							for(Iface iface : interfaces.values()){
+								sendArpRequest(iface, nxtHop);
+							}
 						}
 					try{
 
