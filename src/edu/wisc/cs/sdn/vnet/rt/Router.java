@@ -369,16 +369,7 @@ public class Router extends Device
 		Ethernet ether = new Ethernet();
 		ether.setEtherType(Ethernet.TYPE_IPv4);
 		ether.setSourceMACAddress(inIface.getMacAddress().toString());
-		//set MAC address of nxt hop
-		RouteEntry bestMatch = this.routeTable.lookup(srcIP);
-		int nextHop = bestMatch.getGatewayAddress();
-		if (0 == nextHop)
-        { nextHop = srcIP; }
-		ArpEntry  arpEntry = this.arpCache.lookup(nextHop);
-		if (null == arpEntry)
-        { return; }
-        ether.setDestinationMACAddress(arpEntry.getMac().toBytes());
-
+		
 		//ip header
 		IPv4 ip = new IPv4();
 		ip.setTtl((byte)64);
@@ -420,11 +411,74 @@ public class Router extends Device
 		ip.setPayload(icmp);
 		ip.serialize();
 		ether.setPayload(ip);
+
+		
+		//set MAC address of nxt hop
+		RouteEntry bestMatch = this.routeTable.lookup(srcIP);
+		int nextHop = bestMatch.getGatewayAddress();
+		if (0 == nextHop)
+        { nextHop = srcIP; }
+		
+		
+		
+		ArpEntry  arpEntry = this.arpCache.lookup(nextHop);
+		if (null == arpEntry)
+        { 
+			startArpRequest(etherPacket, nextHop, inIface);
+			return; 
+		}
+        ether.setDestinationMACAddress(arpEntry.getMac().toBytes());
+
+		
 		
 		
 		
 		//send the packet through received interface
 		this.sendPacket(ether, inIface);
+	}
+
+    private void startArpRequest(Ethernet etherPacket,int nxtHop,Iface inface){
+		if(waitingQueue.containsKey(nxtHop)){
+			waitingQueue.get(nxtHop).add(etherPacket);
+			return;
+		}
+		ConcurrentLinkedQueue<Ethernet> tempQ = new ConcurrentLinkedQueue<Ethernet>();
+		tempQ.add(etherPacket);
+		waitingQueue.put(nxtHop,tempQ);
+		Thread t1 = new Thread(new Runnable(){
+			@Override
+			public void run() {
+				boolean arpFound = false;
+				for(int i = 0; i < 3; i++){
+						if(arpCache.lookup(nxtHop)!=null){
+							arpFound = true;
+							break;
+						}else{
+							for(Iface iface : interfaces.values()){
+								sendArpRequest(iface, nxtHop);
+							}
+						}
+					try{
+
+						Thread.sleep(1000);
+					}catch(InterruptedException e){
+						System.out.println("Thread.sleep trows InterruptedException");
+					}
+				}
+				if(!arpFound){				
+					Queue<Ethernet> q = waitingQueue.get(nxtHop);
+					while(!q.isEmpty()){
+						Ethernet e = q.poll();
+						sendICMP(e, inface, 3, 1, false);
+					}
+					waitingQueue.remove(nxtHop);
+				}
+				
+			}
+		});
+		t1.start();		
+
+		return; 
 	}
 
 	private void sendArpRequest(Iface inIface, int requestIp){
@@ -507,7 +561,7 @@ public class Router extends Device
 
     private void forwardIpPacket(Ethernet etherPacket, Iface inIface)
     {
-		final Iface finalInIface = inIface;
+		// final Iface finalInIface = inIface;
         // Make sure it's an IP packet
 		if (etherPacket.getEtherType() != Ethernet.TYPE_IPv4)
 		{ return; }
@@ -545,45 +599,46 @@ public class Router extends Device
         ArpEntry arpEntry = this.arpCache.lookup(nxtHop);
         if (null == arpEntry)
         { 
-			if(waitingQueue.containsKey(nxtHop)){
-				waitingQueue.get(nxtHop).add(etherPacket);
-				return;
-			}
-			ConcurrentLinkedQueue<Ethernet> tempQ = new ConcurrentLinkedQueue<Ethernet>();
-			tempQ.add(etherPacket);
-			waitingQueue.put(nxtHop,tempQ);
-			Thread t1 = new Thread(new Runnable(){
-				@Override
-				public void run() {
-					boolean arpFound = false;
-					for(int i = 0; i < 3; i++){
-							if(arpCache.lookup(nxtHop)!=null){
-								arpFound = true;
-								break;
-							}else{
-								for(Iface iface : interfaces.values()){
-									sendArpRequest(iface, nxtHop);
-								}
-							}
-						try{
+			startArpRequest(etherPacket,nxtHop,inIface);
+			// if(waitingQueue.containsKey(nxtHop)){
+			// 	waitingQueue.get(nxtHop).add(etherPacket);
+			// 	return;
+			// }
+			// ConcurrentLinkedQueue<Ethernet> tempQ = new ConcurrentLinkedQueue<Ethernet>();
+			// tempQ.add(etherPacket);
+			// waitingQueue.put(nxtHop,tempQ);
+			// Thread t1 = new Thread(new Runnable(){
+			// 	@Override
+			// 	public void run() {
+			// 		boolean arpFound = false;
+			// 		for(int i = 0; i < 3; i++){
+			// 				if(arpCache.lookup(nxtHop)!=null){
+			// 					arpFound = true;
+			// 					break;
+			// 				}else{
+			// 					for(Iface iface : interfaces.values()){
+			// 						sendArpRequest(iface, nxtHop);
+			// 					}
+			// 				}
+			// 			try{
 
-							Thread.sleep(1000);
-						}catch(InterruptedException e){
-							System.out.println("Thread.sleep trows InterruptedException");
-						}
-					}
-					if(!arpFound){				
-						Queue<Ethernet> q = waitingQueue.get(nxtHop);
-						while(!q.isEmpty()){
-							Ethernet e = q.poll();
-							sendICMP(e, finalInIface, 3, 1, false);
-						}
-						waitingQueue.remove(nxtHop);
-					}
+			// 				Thread.sleep(1000);
+			// 			}catch(InterruptedException e){
+			// 				System.out.println("Thread.sleep trows InterruptedException");
+			// 			}
+			// 		}
+			// 		if(!arpFound){				
+			// 			Queue<Ethernet> q = waitingQueue.get(nxtHop);
+			// 			while(!q.isEmpty()){
+			// 				Ethernet e = q.poll();
+			// 				sendICMP(e, finalInIface, 3, 1, false);
+			// 			}
+			// 			waitingQueue.remove(nxtHop);
+			// 		}
 					
-				}
-			});
-			t1.start();
+			// 	}
+			// });
+			// t1.start();
 			
 			
 			// TimerTask tk = new TimerTask(){
