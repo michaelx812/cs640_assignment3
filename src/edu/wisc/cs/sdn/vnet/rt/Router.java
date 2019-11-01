@@ -436,7 +436,7 @@ public class Router extends Device
 		if (null == arpEntry)
         { 
 			final Iface finalInface = inIface;
-			startArpRequest(etherPacket, nxtHop, finalInface);
+			startArpRequest(ether, nxtHop, finalInface);
 			return; 
 		}
         ether.setDestinationMACAddress(arpEntry.getMac().toBytes());
