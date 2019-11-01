@@ -553,56 +553,59 @@ public class Router extends Device
 			ConcurrentLinkedQueue<Ethernet> tempQ = new ConcurrentLinkedQueue<Ethernet>();
 			tempQ.add(etherPacket);
 			waitingQueue.put(nxtHop,tempQ);
-			// Thread t1 = new Thread(new Runnable(){
-			// 	int counter = 0;
-			// 	@Override
-			// 	public void run() {
-			// 		long startime = System.currentTimeMillis();
-			// 		while(true){
-			// 			if((System.currentTimeMillis()-startime)>=counter*1000){
-			// 				if(arpCache.lookup(nxtHop)!=null){
-			// 					break;
-			// 				}else if(counter == 3){
-			// 					Queue<Ethernet> q = waitingQueue.get(nxtHop);
-			// 					for(Ethernet e: q){
-			// 						sendICMP(e, inIface, 3, 1, false);
-			// 					}
-			// 					waitingQueue.remove(nxtHop);
-			// 					break;
-			// 				}else{
-			// 					sendArpRequest(inIface, nxtHop);
-			// 					counter++;
-			// 				}
-			// 			}
-			// 		}
-					
-			// 	}
-			// });
-			// t1.start();
-			
-			
-			TimerTask tk = new TimerTask(){
+			Thread t1 = new Thread(new Runnable(){
 				int counter = 0;
 				@Override
 				public void run() {
-					if(arpCache.lookup(nxtHop)!=null){
-						this.cancel();
-					}else if(counter == 3){
-						Queue<Ethernet> q = waitingQueue.get(nxtHop);
-						for(Ethernet e: q){
-							sendICMP(e, finalInIface, 3, 1, false);
+					while(true){
+							if(arpCache.lookup(nxtHop)!=null){
+								break;
+							}else if(counter == 3){
+								Queue<Ethernet> q = waitingQueue.get(nxtHop);
+								for(Ethernet e: q){
+									sendICMP(e, inIface, 3, 1, false);
+								}
+								waitingQueue.remove(nxtHop);
+								break;
+							}else{
+								sendArpRequest(outIface, nxtHop);
+								counter++;
+							}
+						try{
+
+							Thread.sleep(1000);
+						}catch(InterruptedException e){
+							System.out.println("Thread.sleep trows InterruptedException");
 						}
-						waitingQueue.remove(nxtHop);
-						this.cancel();
-					}else{
-						sendArpRequest(finalOutIface, nxtHop);
-						counter++;
 					}
 					
 				}
-			};
-			Timer time = new Timer();
-			time.schedule(tk, 0, 1*1000);
+			});
+			t1.start();
+			
+			
+			// TimerTask tk = new TimerTask(){
+			// 	int counter = 0;
+			// 	@Override
+			// 	public void run() {
+			// 		if(arpCache.lookup(nxtHop)!=null){
+			// 			this.cancel();
+			// 		}else if(counter == 3){
+			// 			Queue<Ethernet> q = waitingQueue.get(nxtHop);
+			// 			for(Ethernet e: q){
+			// 				sendICMP(e, finalInIface, 3, 1, false);
+			// 			}
+			// 			waitingQueue.remove(nxtHop);
+			// 			this.cancel();
+			// 		}else{
+			// 			sendArpRequest(finalOutIface, nxtHop);
+			// 			counter++;
+			// 		}
+					
+			// 	}
+			// };
+			// Timer time = new Timer();
+			// time.schedule(tk, 0, 1*1000);
 			//this.sendICMP(etherPacket, inIface, 3, 1,false);
 
 			return; 
