@@ -554,25 +554,17 @@ public class Router extends Device
 			tempQ.add(etherPacket);
 			waitingQueue.put(nxtHop,tempQ);
 			Thread t1 = new Thread(new Runnable(){
-				int counter = 0;
 				@Override
 				public void run() {
-					while(true){
+					boolean arpFound = false;
+					for(int i = 0; i < 3; i++){
 							if(arpCache.lookup(nxtHop)!=null){
-								break;
-							}else if(counter == 3){
-								Queue<Ethernet> q = waitingQueue.get(nxtHop);
-								for(Ethernet e: q){
-									sendICMP(e, finalInIface, 3, 1, false);
-								}
-								waitingQueue.remove(nxtHop);
+								arpFound = true;
 								break;
 							}else{
 								for(Iface iface : interfaces.values()){
 									sendArpRequest(iface, nxtHop);
 								}
-								
-								counter++;
 							}
 						try{
 
@@ -580,6 +572,14 @@ public class Router extends Device
 						}catch(InterruptedException e){
 							System.out.println("Thread.sleep trows InterruptedException");
 						}
+					}
+					if(!arpFound){				
+						Queue<Ethernet> q = waitingQueue.get(nxtHop);
+						while(!q.isEmpty()){
+							Ethernet e = q.poll();
+							sendICMP(e, finalInIface, 3, 1, false);
+						}
+						waitingQueue.remove(nxtHop);
 					}
 					
 				}
