@@ -30,7 +30,7 @@ public class Router extends Device
 	private ConcurrentLinkedQueue<LocalRIPEntry> ripTable;
 
 	/**queue waiting for arp reply*/
-	ConcurrentHashMap<Integer, ConcurrentLinkedQueue<Ethernet>> waitingQueue;
+	ConcurrentHashMap<Integer, ConcurrentLinkedQueue<ArpRequestEntry>> waitingQueue;
 	
 	/**
 	 * Creates a router for a specific host.
@@ -75,6 +75,14 @@ public class Router extends Device
 		LocalRIPEntry(long t, RIPv2Entry rip){
 			this.startTime = t;
 			this.ripEntry = rip;
+		}
+	}
+	class ArpRequestEntry{
+		Iface iface;
+		Ethernet ether;
+		ArpRequestEntry(Iface face, Ethernet e){
+			this.iface = face;
+			this.ether = e;
 		}
 	}
 
@@ -348,9 +356,9 @@ public class Router extends Device
 			int ip = ByteBuffer.wrap(arpPacket.getSenderProtocolAddress()).getInt();
 			arpCache.insert(mac,ip);
 			if(waitingQueue.containsKey(ip)){
-				ConcurrentLinkedQueue<Ethernet> q = waitingQueue.get(ip);
+				ConcurrentLinkedQueue<ArpRequestEntry> q = waitingQueue.get(ip);
 				while(!q.isEmpty()){
-					Ethernet ePacket = q.poll();
+					Ethernet ePacket = q.poll().ether;
 					ePacket.setDestinationMACAddress(mac.toBytes());
 					this.sendPacket(ePacket,inIface);
 				}
@@ -439,11 +447,11 @@ public class Router extends Device
 
     private void startArpRequest(Ethernet etherPacket,int nxtHop,Iface inface){
 		if(waitingQueue.containsKey(nxtHop)){
-			waitingQueue.get(nxtHop).add(etherPacket);
+			waitingQueue.get(nxtHop).add(new ArpRequestEntry(inface,etherPacket));
 			return;
 		}
-		ConcurrentLinkedQueue<Ethernet> tempQ = new ConcurrentLinkedQueue<Ethernet>();
-		tempQ.add(etherPacket);
+		ConcurrentLinkedQueue<ArpRequestEntry> tempQ = new ConcurrentLinkedQueue<ArpRequestEntry>();
+		tempQ.add(new ArpRequestEntry(inface,etherPacket));
 		waitingQueue.put(nxtHop,tempQ);
 		Thread t1 = new Thread(new Runnable(){
 			@Override
@@ -466,10 +474,10 @@ public class Router extends Device
 					}
 				}
 				if(!arpFound){				
-					Queue<Ethernet> q = waitingQueue.get(nxtHop);
+					Queue<ArpRequestEntry> q = waitingQueue.get(nxtHop);
 					while(!q.isEmpty()){
-						Ethernet e = q.poll();
-						sendICMP(e, inface, 3, 1, false);
+						ArpRequestEntry entry = q.poll();
+						sendICMP(entry.ether, entry.iface, 3, 1, false);
 					}
 					waitingQueue.remove(nxtHop);
 				}
