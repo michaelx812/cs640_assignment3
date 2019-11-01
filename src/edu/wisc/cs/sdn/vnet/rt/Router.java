@@ -280,6 +280,7 @@ public class Router extends Device
         {
         	if (ipPacket.getDestinationAddress() == iface.getIpAddress())
         	{ 
+				System.out.println("Pkg dest is router's interface");
 				switch(ipPacket.getProtocol()){
 					case IPv4.PROTOCOL_TCP:
 						sendICMP(etherPacket, inIface, 3, 3,false);
@@ -287,6 +288,8 @@ public class Router extends Device
 					case IPv4.PROTOCOL_UDP:
 						UDP udp = (UDP)ipPacket.getPayload();
 						if(udp.getDestinationPort()==UDP.RIP_PORT){
+							System.out.println("Handle RIP");
+							System.out.println(etherPacket);
 							handleRIPPacket(etherPacket, inIface);
 							return;
 						}
