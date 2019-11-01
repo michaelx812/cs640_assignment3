@@ -30,7 +30,7 @@ public class Router extends Device
 	private ConcurrentLinkedQueue<LocalRIPEntry> ripTable;
 
 	/**queue waiting for arp reply*/
-	ConcurrentHashMap<Integer, Queue<Ethernet>> waitingQueue;
+	ConcurrentHashMap<Integer, ConcurrentLinkedQueue<Ethernet>> waitingQueue;
 	
 	/**
 	 * Creates a router for a specific host.
@@ -320,7 +320,7 @@ public class Router extends Device
 			int ip = ByteBuffer.wrap(arpPacket.getSenderProtocolAddress()).getInt();
 			arpCache.insert(mac,ip);
 			if(waitingQueue.containsKey(ip)){
-				Queue<Ethernet> q = waitingQueue.get(ip);
+				ConcurrentLinkedQueue<Ethernet> q = waitingQueue.get(ip);
 				while(!q.isEmpty()){
 					Ethernet ePacket = q.poll();
 					ePacket.setDestinationMACAddress(mac.toBytes());
@@ -521,7 +521,7 @@ public class Router extends Device
 				waitingQueue.get(nxtHop).add(etherPacket);
 				return;
 			}
-			Queue<Ethernet> tempQ = new LinkedList<Ethernet>();
+			ConcurrentLinkedQueue<Ethernet> tempQ = new ConcurrentLinkedQueue<Ethernet>();
 			tempQ.add(etherPacket);
 			waitingQueue.put(nxtHop,tempQ);
 			// Thread t1 = new Thread(new Runnable(){
@@ -551,7 +551,7 @@ public class Router extends Device
 			// });
 			// t1.start();
 			
-			Timer time = new Timer();
+			
 			TimerTask tk = new TimerTask(){
 				int counter = 0;
 				@Override
@@ -572,6 +572,7 @@ public class Router extends Device
 					
 				}
 			};
+			Timer time = new Timer();
 			time.schedule(tk, 0, 1*1000);
 			//this.sendICMP(etherPacket, inIface, 3, 1,false);
 
