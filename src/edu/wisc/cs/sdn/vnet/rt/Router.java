@@ -274,8 +274,19 @@ public class Router extends Device
         
         // Reset checksum now that TTL is decremented
         ipPacket.resetChecksum();
-        
-        // Check if packet is destined for one of router's interfaces
+		
+		int dstIP = ipPacket.getDestinationAddress();
+		if(dstIP==IPv4.toIPv4Address("224.0.0.9") || dstIP==inIface.getIpAddress()){
+			if(ipPacket.getProtocol()==IPv4.PROTOCOL_UDP){
+				UDP udp = (UDP)ipPacket.getPayload();
+				if(udp.getDestinationPort()==UDP.RIP_PORT){
+					handleRIPPacket(etherPacket, inIface);
+					return;
+				}
+			}
+		}
+		
+		// Check if packet is destined for one of router's interfaces
         for (Iface iface : this.interfaces.values())
         {
         	if (ipPacket.getDestinationAddress() == iface.getIpAddress())
