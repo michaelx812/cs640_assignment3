@@ -164,14 +164,14 @@ public class Router extends Device
 		switch(etherPacket.getEtherType())
 		{
 		case Ethernet.TYPE_IPv4:
-			IPv4 ipPacket = (IPv4)etherPacket.getPayload();
-			final int ripAddr = IPv4.toIPv4Address("224.0.0.9");
-			if(ipPacket.getDestinationAddress() ==  ripAddr && 
-				ipPacket.getProtocol()== IPv4.PROTOCOL_UDP && 
-					((UDP)ipPacket.getPayload()).getDestinationPort()==520){
-						this.handleRIPPacket(etherPacket, inIface);
-						break;
-			}
+			//IPv4 ipPacket = (IPv4)etherPacket.getPayload();
+			//final int ripAddr = IPv4.toIPv4Address("224.0.0.9");
+			// if(ipPacket.getDestinationAddress() ==  ripAddr && 
+			// 	ipPacket.getProtocol()== IPv4.PROTOCOL_UDP && 
+			// 		((UDP)ipPacket.getPayload()).getDestinationPort()==520){
+			// 			this.handleRIPPacket(etherPacket, inIface);
+			// 			break;
+			// }
 				
 			this.handleIpPacket(etherPacket, inIface);
 			break;
