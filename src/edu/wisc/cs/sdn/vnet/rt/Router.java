@@ -563,12 +563,12 @@ public class Router extends Device
 							}else if(counter == 3){
 								Queue<Ethernet> q = waitingQueue.get(nxtHop);
 								for(Ethernet e: q){
-									sendICMP(e, inIface, 3, 1, false);
+									sendICMP(e, finalInIface, 3, 1, false);
 								}
 								waitingQueue.remove(nxtHop);
 								break;
 							}else{
-								sendArpRequest(outIface, nxtHop);
+								sendArpRequest(finalOutIface, nxtHop);
 								counter++;
 							}
 						try{
