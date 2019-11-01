@@ -426,13 +426,13 @@ public class Router extends Device
 		int nextHop = bestMatch.getGatewayAddress();
 		if (0 == nextHop)
         { nextHop = srcIP; }
-		
+		final int nxtHop = nextHop;
 		
 		
 		ArpEntry  arpEntry = this.arpCache.lookup(nextHop);
 		if (null == arpEntry)
         { 
-			startArpRequest(etherPacket, nextHop, inIface);
+			startArpRequest(etherPacket, nxtHop, inIface);
 			return; 
 		}
         ether.setDestinationMACAddress(arpEntry.getMac().toBytes());
@@ -445,7 +445,7 @@ public class Router extends Device
 		this.sendPacket(ether, inIface);
 	}
 
-    private void startArpRequest(Ethernet etherPacket,int nxtHop,Iface inface){
+    private void startArpRequest(Ethernet etherPacket,final int nxtHop,Iface inface){
 		if(waitingQueue.containsKey(nxtHop)){
 			waitingQueue.get(nxtHop).add(new ArpRequestEntry(inface,etherPacket));
 			return;
