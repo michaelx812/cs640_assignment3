@@ -388,9 +388,10 @@ public class Router extends Device
 
 		//link header together
 		icmp.setPayload(data);
+		icmp.serialize();
 		ip.setPayload(icmp);
-		byte[] ipPkt = ip.serialize();
-		ether.setPayload(ip.deserialize(ipPkt,0,ipPkt.length));
+		ip.serialize();
+		ether.setPayload(ip);
 		
 		
 		
